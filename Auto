@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: url('linkjeachtergrond') no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .quiz-container {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 24px;
+        }
+
+        #timer-container, #progress-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        #timer, #progress {
+            width: 100%;
+            height: 20px;
+            background-color: #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #timer-progress {
+            height: 100%;
+            width: 100%;
+            background-color: green;
+            transition: width 1s linear, background-color 1s linear;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+
+        #timer-text {
+            font-size: 20px;
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            color: #333;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        #results {
+            margin-top: 20px;
+            font-size: 20px;
+            text-align: center;
+        }
+
+        .option input[type="radio"] {
+            display: none;
+        }
+
+        .option {
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .option label {
+            position: relative;
+            padding-left: 30px;
+            cursor: pointer;
+            display: inline-block;
+            margin-bottom: 10px;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .option label::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #333;
+            background-color: white;
+        }
+
+        .option.selected label::before {
+            background-color: #ddd; /* Achtergrondkleur voor geselecteerde optie */
+        }
+
+        .option.selected::after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            width: calc(100% + 10px);
+            height: calc(100% + 10px);
+            border: 2px solid blue;
+            border-radius: 50%;
+            box-sizing: border-box;
+            pointer-events: none;
+        }
+
+        .option.correct label::before {
+            content: '\2713'; /* Groen vinkje */
+            background-color: green;
+            color: white;
+            font-size: 16px;
+            text-align: center;
+            line-height: 20px;
+            border: none;
+        }
+
+        .option.incorrect label::before {
+            content: '\2717'; /* Rood kruisje */
+            background-color: red;
+            color: white;
+            font-size: 16px;
+            text-align: center;
+            line-height: 20px;
+            border: none;
+        }
+
+        #score {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 24px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="quiz-container">
+        <div id="score">Score: 0</div>
+        <h1 id="question-title"></h1>
+        <div id="progress-container">
+            <div id="progress">
+                <div id="question-progress"></div>
+            </div>
+        </div>
+        <div id="quiz"></div>
+        <div id="timer-container">
+            <div id="timer">
+                <div id="timer-progress"></div>
+                <div id="timer-text">60</div>
+            </div>
+        </div>
+        <button id="submit">Check Antwoorden</button>
+        <button id="next" style="display:none;">Volgende vraag</button>
+        <button id="end" style="display:none;">Beëindig Quiz</button>
+        <div id="results"></div>
+    </div>
+    <script>
+        const questions = [
+            { question: "Wat is de hoofdstad van Nederland?", options: ["Amsterdam", "Rotterdam", "Den Haag", "Utrecht"], correct: 0 },
+            { question: "Welke kleur heeft de Nederlandse vlag?", options: ["Rood, wit, blauw", "Blauw, wit, rood", "Groen, wit, rood", "Zwart, rood, geel"], correct: 0 },
+            { question: "Hoeveel provincies heeft Nederland?", options: ["10", "11", "12", "13"], correct: 2 },
+            { question: "Wat is de nationale sport van Nederland?", options: ["Voetbal", "Hockey", "Schaatsen", "Zwemmen"], correct: 0 },
+            { question: "Wat is de langste rivier van Nederland?", options: ["Rijn", "Maas", "IJssel", "Schelde"], correct: 0 },
+            { question: "Welke Nederlandse stad staat bekend om de Domtoren?", options: ["Utrecht", "Amsterdam", "Rotterdam", "Den Haag"], correct: 0 },
+            { question: "Wat is de nationale bloem van Nederland?", options: ["Tulp", "Roos", "Madeliefje", "Narcis"], correct: 0 },
+            { question: "Welke zee grenst aan Nederland?", options: ["Noordzee", "Oostzee", "Waddenzee", "Zwarte Zee"], correct: 0 },
+            { question: "In welke provincie ligt de Veluwe?", options: ["Gelderland", "Utrecht", "Noord-Holland", "Limburg"], correct: 0 },
+            { question: "Welke van deze eilanden hoort bij Nederland?", options: ["Terschelling", "Texel", "Ameland", "Allemaal"], correct: 3 },
+            { question: "Wie was de schilder van de Nachtwacht?", options: ["Van Gogh", "Vermeer", "Rembrandt", "Mondriaan"], correct: 2 },
+            { question: "Hoe heet het Nederlandse koningshuis?", options: ["Oranje-Nassau", "Habsburg", "Windsor", "Bourbon"], correct: 0 },
+            { question: "Wat is het grootste waddeneiland?", options: ["Texel", "Terschelling", "Ameland", "Schiermonnikoog"], correct: 0 },
+            { question: "Welke taal wordt gesproken in Friesland?", options: ["Nederlands", "Duits", "Fries", "Engels"], correct: 2 },
+            { question: "Wat is de nationale drank van Nederland?", options: ["Jenever", "Bier", "Koffie", "Thee"], correct: 0 },
+            { question: "Hoeveel dagen duurt de Nijmeegse Vierdaagse?", options: ["4", "3", "5", "6"], correct: 0 },
+            { question: "Waar staat de Efteling?", options: ["Kaatsheuvel", "Rotterdam", "Den Haag", "Utrecht"], correct: 0 },
+            { question: "Wat is de naam van de Nederlandse munt die tot 2002 in gebruik was?", options: ["Gulden", "Euro", "Kroon", "Franc"], correct: 0 },
+            { question: "Welke Nederlandse zanger is bekend van 'Bloed, Zweet en Tranen'?", options: ["André Hazes", "Marco Borsato", "Guus Meeuwis", "Jan Smit"], correct: 0 },
+            { question: "Hoe heet het bekendste museum van Nederland?", options: ["Rijksmuseum", "Van Gogh Museum", "Mauritshuis", "Anne Frank Huis"], correct: 0 }
+        ];
+
+        const quizContainer = document.getElementById('quiz');
+        const resultsContainer = document.getElementById('results');
+        const submitButton = document.getElementById('submit');
+        const nextButton = document.getElementById('next');
+        const endButton = document.getElementById('end');
+        const scoreContainer = document.getElementById('score');
+        const timerProgress = document.getElementById('timer-progress');
+        const questionProgress = document.getElementById('question-progress');
+        const timerText = document.getElementById('timer-text');
+        const questionTitle = document.getElementById('question-title');
+
+        let currentQuestion = 0;
+        let score = 0;
+        let timeLeft = 60;
+        let timer;
+        let selectedQuestions = [];
+
+        function getRandomQuestions() {
+            let shuffled = questions.sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, 10);
+        }
+
+        function showQuestion() {
+            const question = selectedQuestions[currentQuestion];
+            const options = question.options.map((option, index) => `
+                <div class="option">
+                    <input type="radio" name="question${currentQuestion}" value="${index}" id="option${index}">
+                    <label for="option${index}">${option}</label>
+                </div>
+            `).join('');
+
+            questionTitle.textContent = question.question;
+            quizContainer.innerHTML = `<div class="options">${options}</div>`;
+
+            submitButton.style.display = 'block';
+            nextButton.style.display = 'none';
+            endButton.style.display = 'none';
+
+            resetTimer();
+            updateProgressBar();
+            startTimer();
+        }
+
+        function showResults() {
+            resultsContainer.innerHTML = `Je score is ${score} van de ${selectedQuestions.length}.`;
+        }
+
+        function checkAnswers() {
+            const selectedAnswer = quizContainer.querySelector('input[name="question' + currentQuestion + '"]:checked');
+            const correctAnswer = selectedQuestions[currentQuestion].correct;
+
+            if (selectedAnswer) {
+                const answerValue = parseInt(selectedAnswer.value);
+                if (answerValue === correctAnswer) {
+                    score++;
+                    selectedAnswer.parentElement.classList.add('correct');
+                } else {
+                    selectedAnswer.parentElement.classList.add('incorrect');
+                    quizContainer.querySelector('input[value="' + correctAnswer + '"]').parentElement.classList.add('correct');
+                }
+
+                scoreContainer.textContent = `Score: ${score}`;
+                submitButton.style.display = 'none';
+                nextButton.style.display = currentQuestion < selectedQuestions.length - 1 ? 'block' : 'none';
+                endButton.style.display = currentQuestion === selectedQuestions.length - 1 ? 'block' : 'none';
+                clearInterval(timer);
+
+                // Sla de score op in localStorage en redirect naar resultatenpagina
+                localStorage.setItem('quizScore', score);
+                window.location.href = 'index.html'; // Pas de URL aan indien nodig
+            } else {
+                alert("Kies een antwoord voordat je verder gaat!");
+            }
+        }
+
+        function updateProgressBar() {
+            const progressPercentage = ((currentQuestion + 1) / selectedQuestions.length) * 100;
+            questionProgress.style.width = `${progressPercentage}%`;
+        }
+
+        function resetTimer() {
+            clearInterval(timer);
+            timeLeft = 60;
+            timerProgress.style.width = '100%';
+            timerText.textContent = timeLeft;
+            timerProgress.style.backgroundColor = 'green';
+        }
+
+        function startTimer() {
+            timer = setInterval(() => {
+                timeLeft--;
+                const timePercentage = (timeLeft / 60) * 100;
+                timerProgress.style.width = `${timePercentage}%`;
+                timerText.textContent = timeLeft;
+
+                // Smooth color transition from green to yellow to red
+                if (timePercentage > 50) {
+                    timerProgress.style.backgroundColor = `rgb(${255 - (255 * ((timePercentage - 50) / 50))}, 255, 0)`;
+                } else {
+                    timerProgress.style.backgroundColor = `rgb(255, ${255 * (timePercentage / 50)}, 0)`;
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    checkAnswers();
+                }
+            }, 1000); // Timer now correctly counts down from 60 seconds
+        }
+
+        submitButton.addEventListener('click', checkAnswers);
+        nextButton.addEventListener('click', () => {
+            currentQuestion++;
+            showQuestion();
+        });
+        endButton.addEventListener('click', showResults);
+
+        // Start quiz by selecting 10 random questions and showing the first one
+        selectedQuestions = getRandomQuestions();
+        showQuestion();
+    </script>
+</body>
+</html>
